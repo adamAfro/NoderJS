@@ -1,6 +1,49 @@
 
 'use strict';
 
+var Timer = class {
+
+	constructor(delay = 0, callback = null, nIter = 0) {
+
+		this.delay = this._id = this.callback = null;
+
+		if (delay) {
+
+			this.delay = delay;
+
+			if (callback) {
+
+				this.callback = callback;
+
+				this._update();
+			}
+		}
+	}
+
+	stop() {
+
+		window.clearInterval(this._id);
+		this._id = null;
+
+	}
+
+	start() {
+
+		if (!this._id) {
+			this._update();
+		}
+	}
+
+	_update() {
+		this._id = window.setInterval(this.callback, this.timer);
+	}
+
+	static sleep(delay) {
+
+		return new Promise((resolve, reject) => window.setTimeout((delay) => resolve(), delay));
+	}
+}
+
 /**
  * Robi rzeczy na elementach nie nodes
  */
@@ -45,7 +88,7 @@ var NoderBase = class {
 			if (NoderBase.isElement(parent)) {
 				parent.appendChild(element);
 			} else if(parent instanceof Noder) {
-				parent._self.appendChild(element);
+				parent.target.appendChild(element);
 			}
 
 		}
@@ -200,7 +243,7 @@ var Noder = class extends NoderBase {
 		/**
 		 * Element głowny
 		 */
-		this._self = null;
+		this.target = null;
     this.self = element;
 
 		/**
@@ -215,9 +258,9 @@ var Noder = class extends NoderBase {
 	attribute(name, replacement) {
 
 		if (replacement)
-			this._self.setAttribute(name, replacement);
+			this.target.setAttribute(name, replacement);
 
-		return this._self.getAttribute(name);
+		return this.target.getAttribute(name);
 	}
 
 	/**
@@ -226,9 +269,9 @@ var Noder = class extends NoderBase {
 	data(name, replacement) {
 
 		if (replacement)
-			this._self.setAttribute("data-" + name, replacement);
+			this.target.setAttribute("data-" + name, replacement);
 
-		return this._self.getAttribute("data-" + name);
+		return this.target.getAttribute("data-" + name);
 	}
 
 	/**
@@ -236,8 +279,8 @@ var Noder = class extends NoderBase {
 	 */
   set self(element) {
 
-    if (this._self)
-      this._self.remove();
+    if (this.target)
+      this.target.remove();
 
     if (!element) {
 
@@ -245,11 +288,11 @@ var Noder = class extends NoderBase {
 
     } else if (NoderBase.isElement(element)) {
 
-      this._self = element;
+      this.target = element;
 
     } else if (typeof element == "object") {
 
-      this._self = this._create(element);
+      this.target = this._create(element);
 
     } else {
 
@@ -267,7 +310,7 @@ var Noder = class extends NoderBase {
 
 		this.menials = new Map();
 
-    this._self.remove();
+    this.target.remove();
   }
 
 	/**
@@ -275,7 +318,7 @@ var Noder = class extends NoderBase {
 	 */
 	move(parent) {
 
-		parent.appendChild(this._self);
+		parent.appendChild(this.target);
 	}
 
 
@@ -304,7 +347,7 @@ var Noder = class extends NoderBase {
       this.menials.get(name).remove();
 
     if (element && !(NoderBase.isElement(element) || element.parent))
-      element.parent = this._self;
+      element.parent = this.target;
 
     this.menials.set(name, new Noder(element));
 
@@ -315,11 +358,12 @@ var Noder = class extends NoderBase {
 	/**
 	 * Dodaje styl css
 	 */
-  addStyles(styles) {
+  setStyles(styles) {
 
     styles = this._objectStyles(styles);
 
-    Object.keys(styles).forEach(key => this._self.style[key] = styles[key]);
+		// Object.keys(styles).forEach(key => console.log(key + ": " + styles[key]))
+    Object.keys(styles).forEach(key => this.target.style[key] = styles[key]);
   }
 
 	/**
@@ -327,9 +371,9 @@ var Noder = class extends NoderBase {
 	 */
   set styles(styles) {
 
-    this._self.removeAttribute("style");
+    this.target.removeAttribute("style");
 
-    this.addStyles(styles);
+    this.setStyles(styles);
   }
 
 
@@ -350,7 +394,7 @@ var Noder = class extends NoderBase {
 
     present = this._arrayClasses(present);
 
-    let absent = Array.from(this._self.classList).filter(x => !present.includes(x));
+    let absent = Array.from(this.target.classList).filter(x => !present.includes(x));
 
     this.classify({ present, absent });
   }
@@ -366,8 +410,8 @@ var Noder = class extends NoderBase {
 
   		present.forEach((cls) => {
 
-  			if (!this._self.classList.contains(cls))
-  				this._self.classList.add(cls);
+  			if (!this.target.classList.contains(cls))
+  				this.target.classList.add(cls);
   		});
     }
 
@@ -377,8 +421,8 @@ var Noder = class extends NoderBase {
 
   		absent.forEach((cls) => {
 
-  			if (this._self.classList.contains(cls))
-  				this._self.classList.remove(cls);
+  			if (this.target.classList.contains(cls))
+  				this.target.classList.remove(cls);
   		});
     }
 	}
@@ -389,11 +433,131 @@ var Noder = class extends NoderBase {
 	expectEvent(type) {
 
 		return new Promise((resolve, reject) =>
-			this._self.addEventListener(type, e => this._handleEvent(e, resolve))
+			this.target.addEventListener(type, e => this._handleEvent(e, resolve))
 		).then(e => {
-			this._self.removeEventListener(type, e => this._handleEvent(e, resolve));
+			this.target.removeEventListener(type, e => this._handleEvent(e, resolve));
 
 			return e;
 		});
+	}
+
+	getOffset() {
+
+		return this.offset;
+	}
+
+	get offset() {
+
+		return {
+			top: this.target.offsetTop,
+			left: this.target.offsetLeft,
+			height: this.target.offsetHeight,
+			width: this.target.offsetWidth,
+			center: {
+				top: this.target.offsetTop + this.target.offsetHeight / 2,
+				left: this.target.offsetLeft + this.target.offsetWidth / 2,
+			}
+		}
+	}
+}
+
+/**
+ * Element, który ogarnia ruch myszki nad nim jak na kole
+ */
+var MouseNoder = class extends Noder {
+
+	constructor(element) {
+		super(element);
+
+		this._mouseDown();
+
+		this.cursor = {};
+	}
+
+	/**
+	 * Ogarnia ruch kursora po kliknięciu
+	 */
+  expectMouseCircle() {
+
+    return this.expectEvent("mousemove")
+			.then((move) => {
+
+				let offset = this.getOffset();
+
+				// relatywnie do środka jak funkcje matematyczne
+        let
+          top = offset.center.top - move.clientY,
+          left = move.clientX - offset.center.left;
+
+				if (this.cursor.top && this.cursor.left) {
+
+					let angle,
+						x = Math.sqrt(this.cursor.top**2 + this.cursor.left**2),
+						r = Math.sqrt(top**2 + left**2);
+					angle = Math.atan(x/r); // nwm czemu tangens, ale cosinus nie działa
+
+
+					let // Redukcja dokładności
+						height = Math.abs(top - this.cursor.top),
+						width = Math.abs(left - this.cursor.left);
+
+					let wise;
+					// TODO opt:
+					let
+						vertical = (height > width),
+						onTop = (top > 0),
+						onLeft = (left < 0),
+						toTop = (top > this.cursor.top),
+						toLeft = (left < this.cursor.left);
+
+					let
+						horizontal = !vertical,
+						onBottom = !onTop,
+						onRight = !onLeft,
+						toBottom = !toTop,
+						toRight = !toLeft;
+
+
+					if (horizontal) {
+
+						if ((onLeft && toTop) || (onRight && toBottom))
+							wise = 1;
+						else
+							wise = -1;
+
+					} else {
+
+						if ((onTop && toRight) || (onBottom && toLeft))
+							wise = 1;
+						else
+							wise = -1;
+
+					}
+
+					this.cursor = { top, left	}
+
+					return { angle, wise };
+				}
+
+				this.cursor = { top, left	}
+	    });
+  }
+
+	_mouseDown() {
+
+		return this.expectEvent("mousedown").then((click) => {
+
+			let offset = this.getOffset();
+
+			// relatywnie do środka jak funkcje matematyczne
+			this.cursor = {
+				top: offset.center.top - click.clientY,
+				left: click.clientX - offset.center.left
+			}
+
+			this.mouseDown = true;
+
+			this.expectEvent("mouseup").then(() => this.mouseDown = false);
+		}).then(() => this._mouseDown());
 	}
 }

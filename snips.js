@@ -8,15 +8,28 @@ export class Website {
 		return window.location.hash.substring(1);
 	}
 
-	static _resolve(resolve) {
+	static insertCSSDefaults({ className = "default" } = {}) {
 
-		resolve();
+		let styleSheet = document.createElement("style");
+
+		styleSheet.innerHTML =
+			`.${className} {margin:0;border:0}` +
+			`.${className} button, .${className} input[type="submit"], .${className} input[type="reset"], .${className} input, .${className} a{background: none; color: inherit;border: none; outline: none;font: inherit; cursor: pointer;text-decoration: none;padding: 0;}` +
+			`.${className} h1, .${className} h2, .${className} h3, .${className} h4, .${className} h5, .${className} h6{margin: 0; font-size: 100%; font-weight: normal;}` +
+			`.${className} button::-moz-focus-inner{border: 0}`;
+
+		document.querySelector("head").appendChild(styleSheet);
 	}
 
 	static expectUrlChange() {
 
-		return new new Promise((resolve, reject) => window.addEventListener("hashchange", () => this._resolve(resolve)))
-			.then(() => window.removeEventListener("hashchange", () => this._resolve(resolve)));
+		return new Promise((resolve, reject) => window.addEventListener("hashchange", () => this._resolveUrlChange(resolve)))
+			.then(() => window.removeEventListener("hashchange", () => this._resolveUrlChange(resolve)));
+	}
+
+	static _resolveUrlChange(resolve) {
+
+		resolve();
 	}
 
 	static call(

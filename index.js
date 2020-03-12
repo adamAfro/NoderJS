@@ -1,4 +1,260 @@
-import NoderBase from './base.js';
+/**
+ *
+ */
+class NoderBase {
+
+	constructor(element) {
+
+		this.target = this._getTargetFrom(element);
+  }
+
+	/**
+	 * Tworzy nowy element html
+	 */
+	_create({
+
+    element = null,
+
+    tag = "div",
+
+		id = null, classes = "", styles = {},
+
+		previous = null, parent = null, begining = false,
+
+		html = null, text = null,
+
+		data = null,
+
+		type = null, disabled = false, value = null, placeholder = null, step = null, scalable = 0
+
+	} = {}) {
+
+    if (!element)
+		  element = document.createElement(tag);
+
+		if (previous)
+			previous.parentElement.insertBefore(element, previous.nextSibling);
+		else if (parent) {
+
+			if(parent instanceof NoderBase)
+				parent = parent.target;
+
+			if (begining)
+				parent.prepend(element)
+			else
+				parent.appendChild(element);
+
+		}
+
+
+    switch (tag) {
+
+      case "input":
+
+        if (scalable) {
+
+    			this._scaleInput(element, scalable);
+
+    			element.addEventListener("input", () => this._scaleInput(element, scalable));
+    		}
+
+        if (type)
+          element.type = type;
+
+        if (disabled)
+          element.disabled = true;
+
+        if (value)
+          element.value = value;
+
+        if (placeholder)
+          element.placeholder = placeholder;
+
+				if (step)
+					element.step = step;
+
+        break;
+
+			case "textarea":
+
+				if (value)
+					element.value = value;
+
+        if (scalable) {
+
+    			this._scaleTextarea(element, scalable);
+
+    			element.addEventListener("input", () => this._scaleTextarea(element, scalable));
+    		}
+
+				break;
+
+      case "img":
+        if (value) {
+          element.src = value;
+          element.alt = ":(";
+        }
+        break;
+
+      case "a":
+
+        if (value)
+          element.href = value;
+        else
+          element.href = "javascript:;";
+
+      default:
+
+        if (html)
+          element.innerHTML = html;
+
+        if (text)
+          element.innerText = text;
+
+    }
+
+		if (id)
+			element.id = id;
+
+		if (classes)
+      this._arrayClasses(classes).forEach((cls) => element.classList.add(cls));
+
+		if (styles)
+			this._mapStyles(styles).forEach((property, name) => element.style[name] = property);
+
+		if (data)
+			Object.entries(data).forEach(entry => element.setAttribute("data-" + entry[0], entry[1]))
+
+
+		return element;
+	}
+
+	/**
+	 * Szkaluje element typu input
+	 */
+	_scaleInput(input, min = 5) {
+
+		input.size = (input.value.length >= min) ? input.value.length : min;
+	}
+
+	_scaleTextarea(textarea, min = 3) {
+
+		// TODO
+	}
+
+	/**
+	 * TODO ogarnia eventy obiektami typu promise
+	 */
+	_handleEvent(e, resolve) {
+
+		resolve(e);
+	}
+
+	/**
+	 * Npdst argumetnu wydaje klasy w tablicy
+	 */
+  _arrayClasses(classes) {
+
+    if (typeof classes == "string") {
+			classes = classes.split(" ");
+    }
+
+    classes.filter(x => x == "");
+    // filtry
+
+    return classes;
+  }
+
+	/**
+	 * Wydaje style w formie obiektu: nazwa css => styl
+	 */
+  _mapStyles(styles) {
+
+    let stylesMap = new Map();
+
+    if (typeof styles == "string") {
+
+      styles = styles.split(";");
+
+      for (let i = 0; i < styles.length; i++) {
+
+				let
+					name = styles[i].substring(0, styles[i].indexOf(":")).replace(/\s/g, ''),
+					property = styles[i].substring(styles[i].indexOf(":") + 1);
+
+        stylesMap.set(name, property);
+      }
+    }
+
+    return stylesMap;
+  }
+
+	/**
+	 * Zwraca element html dla Noderów
+	 */
+	_getTargetFrom(element) {
+
+		if (!element) {
+
+      throw "Noder: null";
+
+    } else if (element instanceof Noder) {
+
+			return element.target;
+
+		} else if (NoderBase.isHTMLElement(element)) {
+
+      return element;
+
+    } else if (typeof element == "object") {
+
+      return this._create(element);
+
+    } else {
+
+      throw "Noder: type";
+
+    }
+	}
+
+	_getTypeOf(element) {
+
+		if (!element) {
+
+      throw "Noder: null";
+
+    } else if (element instanceof Noder) {
+
+			return "noder";
+
+		} else if (NoderBase.isHTMLElement(element)) {
+
+      return "dom";
+
+    } else if (typeof element == "object") {
+
+      return "argument";
+
+    } else {
+
+      throw "Noder: type";
+
+    }
+	}
+
+  /**
+   * https://stackoverflow.com/a/384380
+   *
+   * Returns true if it is a DOM element
+   */
+  static isHTMLElement(o){
+    return (
+      typeof HTMLElement === "object" ? o instanceof HTMLElement : //DOM2
+      o && typeof o === "object" && o !== null && o.nodeType === 1 && typeof o.nodeName === "string"
+    );
+  }
+}
+
 
 /**
  * Nakładka na element
@@ -7,79 +263,21 @@ export class Noder extends NoderBase {
 
   constructor(element) {
 
-    super();
+    super(element);
 
-		/**
-		 * Element głowny
-		 */
-		this.target = null;
-    this.setTarget(element);
+		this.triggers = new Map();
   }
 
+	/**
+	 * Usuwa zawartość elementu
+	 */
 	clear() {
 
 		this.target.innerHTML = "";
 	}
 
 	/**
-	 * Atrybut html elementu
-	 */
-	attribute(name, replacement) {
-
-		if (replacement)
-			this.target.setAttribute(name, replacement);
-
-		return this.target.getAttribute(name);
-	}
-
-	/**
-	 * Atrybut html typu data
-	 */
-	data(name, replacement) {
-
-		if (replacement)
-			this.target.setAttribute("data-" + name, replacement);
-
-		return this.target.getAttribute("data-" + name);
-	}
-
-	dataRemove(name) { this.target.removeAttribute("data-" + name) }
-
-	/**
-	 * Usuwa stary element główny i zmienia na nowy
-	 */
-  setTarget(element) {
-
-    if (this.target) {
-
-      this.target.remove();
-		}
-
-    if (!element) {
-
-      throw "Noder: null";
-
-    } else if (element instanceof Noder) {
-
-			this.target = element.target;
-
-		} else if (NoderBase.isElement(element)) {
-
-      this.target = element;
-
-    } else if (typeof element == "object") {
-
-      this.target = this._create(element);
-
-    } else {
-
-      throw "Noder: type";
-
-    }
-  }
-
-	/**
-	 * Usuwa element i pachołków`
+	 * Usuwa element
 	 */
   remove() {
 
@@ -87,11 +285,69 @@ export class Noder extends NoderBase {
   }
 
 	/**
+	 * Sprawdza czy element należy do drzewa dom
+	 */
+	belongs() {
+
+		return this.target.parentElement ? true : false;
+	}
+
+	/**
+	 * Pozycja i wielkość elementu
+	 */
+	get offset() {
+
+		return {
+			top: this.target.offsetTop,
+			left: this.target.offsetLeft,
+			height: this.target.offsetHeight,
+			width: this.target.offsetWidth,
+			center: {
+				top: this.target.offsetTop + this.target.offsetHeight / 2,
+				left: this.target.offsetLeft + this.target.offsetWidth / 2,
+			}
+		}
+	}
+
+	/**
+	 * Zwraca element-rodzica jako obiekt Noder
+	 */
+	get parent() {
+
+		if (this.target.parentElement)
+			return new Noder(this.target.parentElement);
+	}
+
+	/**
 	 * Zmienia rodzica elementu
 	 */
-	move(parent) {
+	moveTo(newParent) {
 
-		parent.appendChild(this.target);
+		this._getTargetFrom(newParent).appendChild(this.target);
+	}
+
+
+	/**
+	 * Atrybut html elementu
+	 */
+	attr(name, { remove = false, replacement = null }) {
+
+		let lastAttr = this.target.getAttribute(name);
+
+		if (remove)
+			this.target.removeAttribute(name);
+		else if (replacement)
+			this.target.setAttribute(name, replacement);
+
+		return lastAttr;
+	}
+
+	/**
+	 * Atrybut html typu data
+	 */
+	data(name, options) {
+
+		return this.attr("data-" + name, options);
 	}
 
 
@@ -99,14 +355,14 @@ export class Noder extends NoderBase {
 
 		let element = document.querySelector(selector);
 
-		return new Noder(element);
+		return element ? new Noder(element) : null;
 	}
 
 	select(selector) {
 
 		let element = this.target.querySelector(selector);
 
-		return new Noder(element);
+		return element ? new Noder(element) : null;
 	}
 
 
@@ -132,6 +388,35 @@ export class Noder extends NoderBase {
   }
 
 
+
+	/**
+	 * Dodaje klasy present i usuwa absent
+	 */
+	classify({ present = [], absent = [] }) {
+
+		if (present && present.length) {
+
+			present = this._arrayClasses(present);
+
+			present.forEach((cls) => {
+
+				if (!this.target.classList.contains(cls))
+					this.target.classList.add(cls);
+			});
+		}
+
+		if (absent && absent.length) {
+
+			absent = this._arrayClasses(absent);
+
+			absent.forEach((cls) => {
+
+				if (this.target.classList.contains(cls))
+					this.target.classList.remove(cls);
+			});
+		}
+	}
+
 	/**
 	 * Dodaje klasy
 	 */
@@ -154,33 +439,6 @@ export class Noder extends NoderBase {
     this.classify({ present, absent });
   }
 
-	/**
-	 * Dodaje klasy present i usuwa absent
-	 */
-	classify({ present = [], absent = [] }) {
-
-    if (present && present.length) {
-
-      present = this._arrayClasses(present);
-
-  		present.forEach((cls) => {
-
-  			if (!this.target.classList.contains(cls))
-  				this.target.classList.add(cls);
-  		});
-    }
-
-    if (absent && absent.length) {
-
-      absent = this._arrayClasses(absent);
-
-  		absent.forEach((cls) => {
-
-  			if (this.target.classList.contains(cls))
-  				this.target.classList.remove(cls);
-  		});
-    }
-	}
 
 	/**
 	 * Obietnica eventu
@@ -199,29 +457,88 @@ export class Noder extends NoderBase {
 		});
 	}
 
-	getOffset() {
+	addTrigger(name, type, callback) {
 
-		return this.offset;
+		this.target.addEventListener(type, callback, false);
+
+		this.triggers.push(name, {
+			remove: () => this.target.removeEventListener(type, callback, false)
+		});
 	}
 
-	get offset() {
+	/**
+	 * Zwraca specyficzną wartość elementu
+	 */
+	get value() {
 
-		return {
-			top: this.target.offsetTop,
-			left: this.target.offsetLeft,
-			height: this.target.offsetHeight,
-			width: this.target.offsetWidth,
-			center: {
-				top: this.target.offsetTop + this.target.offsetHeight / 2,
-				left: this.target.offsetLeft + this.target.offsetWidth / 2,
-			}
+		let tag = this.target.tagName.toLowerCase();
+
+		switch (tag) {
+
+			case "a": {
+				return this.target.href;
+			} break;
+
+			case "img": {
+				return this.target.src;
+			} break;
+
+			case "select": case "input": case "button": {
+
+				if (this.target.type == "number") {
+
+					if (this.target.step == "1") // TODO regex dla całkowitych
+						return parseInt(this.target.value);
+					else
+						return parseFloat(this.target.value);
+
+				} /* else if() {
+
+				} */ else
+					return this.target.value;
+
+			} break;
+
+			/* case "textarea": {
+
+			} break; */
+
+			default: {
+
+			} break;
 		}
+
 	}
 
+	/**
+	 * Ustala specyficzną wartość elementu
+	 */
+	set value(value) {
 
-	addChar(char) {
+		let tag = this.target.tagName.toLowerCase();
 
-		this.target.innerHTML = this.target.innerText + char;
+		switch (tag) {
+
+			case "a": {
+				this.target.href = value;
+			} break;
+
+			case "img": {
+				this.target.src = value;
+			} break;
+
+			case "select": case "input": case "button": {
+				this.target.value = value
+			} break;
+
+			/* case "textarea": {
+
+			} break; */
+
+			default: {
+
+			} break;
+		}
 	}
 
 	get html() {
@@ -243,262 +560,4 @@ export class Noder extends NoderBase {
 
 		this.target.innerText = text;
 	}
-
-	get input() {
-
-		let input;
-
-		if (this.target.type == "number") {
-
-			if (this.target.step == "1")
-				input = parseInt(this.target.value);
-			else
-				input = parseFloat(this.target.value);
-
-		} else {
-
-			input = this.target.value;
-
-		}
-
-		return input;
-	}
-
-	set input(input) { this.target.value = input }
 }
-
-var WidgetFoundations = {
-
-	MouseCircle: class extends Noder {
-
-		constructor(element, {
-			onMouseDown = true
-		} = {}) {
-			super(element);
-
-			this._mouseDown();
-
-	    this.onMouseDown = onMouseDown;
-
-			this.cursor = {};
-		}
-
-		/**
-		 * Ogarnia ruch kursora po kliknięciu
-		 */
-	  expectMouseCircle() {
-
-	    return this.expectEvent("mousemove")
-				.then((move) => {
-
-					let offset = this.getOffset();
-
-					// relatywnie do środka jak funkcje matematyczne
-	        let
-	          top = offset.center.top - move.clientY,
-	          left = move.clientX - offset.center.left;
-
-					if (this.cursor.top && this.cursor.left) {
-
-						let angle,
-							x = Math.sqrt(this.cursor.top**2 + this.cursor.left**2),
-							r = Math.sqrt(top**2 + left**2);
-						angle = Math.atan(x/r); // nwm czemu tangens, ale cosinus nie działa
-
-
-						let // Redukcja dokładności
-							height = Math.abs(top - this.cursor.top),
-							width = Math.abs(left - this.cursor.left);
-
-						let
-							vertical = (height > width),
-							onTop = (top > 0),
-							onLeft = (left < 0),
-							toTop = (top > this.cursor.top),
-							toLeft = (left < this.cursor.left);
-
-						let
-							horizontal = !vertical,
-							onBottom = !onTop,
-							onRight = !onLeft,
-							toBottom = !toTop,
-							toRight = !toLeft;
-
-						/* TODO: opt */
-						if (horizontal) {
-							if ((onLeft && toTop) || (onRight && toBottom));
-							else
-								angle = -angle;
-
-						} else {
-							if ((onTop && toRight) || (onBottom && toLeft));
-							else
-								angle = -angle;
-						}
-
-						this.cursor = { top, left	}
-
-						return angle;
-					}
-
-					this.cursor = { top, left	}
-		    });
-	  }
-
-		_mouseDown() {
-
-			return this.expectEvent("mousedown").then((click) => {
-
-				let offset = this.getOffset();
-
-				// relatywnie do środka jak funkcje matematyczne
-				this.cursor = {
-					top: offset.center.top - click.clientY,
-					left: click.clientX - offset.center.left
-				}
-
-				this.mouseDown = true;
-
-				this.expectEvent("mouseup").then(() => this.mouseDown = false);
-			}).then(() => this._mouseDown());
-		}
-	},
-}
-
-export var Widgets = {
-
-	/**
-	 * @TODO: kręcenie nie jest dokładne
-	 */
-	Wheel: class extends WidgetFoundations.MouseCircle {
-
-	  constructor(element, mouseAttr, {
-			delay = 50
-		} = {}) {
-
-	    super(element, mouseAttr);
-
-			this.delay = delay;
-
-	    this._onRotation = () => { return }
-	  }
-
-	  set onRotation(callback) { this._onRotation = callback }
-
-	  rotate() {
-
-	    if (this.onMouseDown)
-	      this.expectEvent("mousedown").then(() => this._rotate());
-	    else
-	      this._rotate();
-	  }
-
-	  _rotate() { this.handleWheel().then(() => this.rotate()) }
-
-	  handleWheel() {
-
-	    return this.expectMouseCircle()
-	      .then((angle) => {
-
-	        if (!angle)
-	          return;
-
-	        let //regex: https://regex101.com/
-	          style = this.target.style.transform,
-	          regex = /rotate\((\-{0,1}\d*\.{1}\d*)\w*\)/;
-	        style = regex.exec(style);
-
-	        let presentAngle = style ? style[1] : 0;
-	        let newAngle = parseFloat(presentAngle) + angle;
-
-	        if (presentAngle > 0 || angle > 0)
-	          this.setStyles(`transform: rotate(${newAngle}rad);`);
-
-	        this._onRotation(angle);
-	      })
-
-	      .finally(() => Timer.sleep(this.delay))
-	      .then(() => {
-
-	        if (!this.onMouseDown || this.mouseDown)
-	          this.handleWheel();
-	      });
-	  }
-	},
-
-	// Calendar: class extends Noder {
-	//
-	// 	constructor(target) {
-	//
-	// 		super(target);
-	//
-	// 		this.today = new Date();
-	// 		this.year = null;
-	// 		this.month = null;
-	// 		this.table = new Noder({ tag: "table", classes: "days", parent: this });
-	//
-	// 		this.signDays();
-	//
-	//
-	// 		this.days = [];
-	//
-	// 	}
-	//
-	// 	/**
-	// 	 * @author https://stackoverflow.com/a/16353241
-	// 	 */
-	// 	isLeapYear() {
-	//
-	// 		return ((this.year % 4 == 0) && (this.year % 100 != 0)) || (this.year % 400 == 0);
-	// 	}
-	//
-	// 	_daysN() {
-	//
-	// 		if (!this.year)
-	// 			this.year = this.today.getFullYear();
-	//
-	// 		if (!this.month)
-	// 			this.month = this.today.getMonth();
-	//
-	// 		if ([0,2,4,6,7,9,11].includes(this.month))
-	// 			return 31;
-	// 		else if ([3,5,8,10].includes(this.month))
-	// 			return 30;
-	// 		else if (this.isLeapYear())
-	// 			return 29;
-	// 		else
-	// 			return 28;
-	// 	}
-	//
-	// 	iterDays() {
-	//
-	// 		let
-	// 			pause = new Date(this.year, this.month, 0).getDay(),
-	// 			daysN = this._daysN();
-	//
-	// 		for (let i = 0; i < daysN; i++) {
-	//
-	// 			let text;
-	// 			if (i < pause)
-	// 				text = "";
-	// 			else
-	// 				text = i + 1;
-	//
-	// 		}
-	// 	}
-	//
-	// 	signDays() {
-	//
-	// 		let
-	// 			parent = new Noder({ tag: "tr", classes: "week",
-	// 				parent: new Noder({ tag: "thead", parent: this.table })
-	// 			}),
-	// 			names =
-	// 				//["monday", "thuesday", "wednesday", "thursday", "friday", "saturday", "sunday"]
-	// 				["poniedziałek", "wtorek", "środa", "czwartek", "piątek", "sobota", "niedziela"];
-	//
-	// 		for (let i = 0; i < 7; i++)
-	// 			new Noder({ tag: "th", text: names[i], classes: "name", parent });
-	// 	}
-	// }
-};

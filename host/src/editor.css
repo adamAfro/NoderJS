@@ -1,0 +1,5 @@
+.editor {display: flex;flex-flow: row wrap;max-width: 21em;background: black;color: white;padding: 3em 1em;}
+.editor .heading {text-align: center;font-size: 150%;font-weight: bold;}
+.editor .heading option {font-size: 50%;}
+.editor .fullline, .editor .heading {width: 100%;}
+.editor .fullline, .editor *:not(.fullline) .field {border-bottom: solid thin;}

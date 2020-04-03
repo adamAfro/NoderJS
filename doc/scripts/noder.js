@@ -267,7 +267,7 @@ class NoderBase {
 /**
  * Nakładka na element
  */
-export class Noder extends NoderBase {
+class Noder extends NoderBase {
 
   constructor(element) {
 

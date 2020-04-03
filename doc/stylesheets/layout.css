@@ -1,0 +1,45 @@
+select, option, button, input[type="submit"], input[type="reset"], input, a {
+	background: none;
+	color: inherit;
+	border: none;
+	padding: 0;
+	font: inherit;
+	cursor: pointer;
+	outline: none;
+	text-decoration: none;
+	font-size: 100%;
+	-webkit-appearance: none;
+	-moz-appearance: none;
+}
+
+h1, h2, h3, h4, h5, h6 {
+	margin: 0;
+	font-size: 100%;
+	font-weight: normal;
+}
+
+address {
+  font-style: normal;
+}
+
+button::-moz-focus-inner {border: 0}
+
+.website {margin: 0;border: 0;display: flex;flex-flow: column;min-height: 100vh;overflow-x: hidden;overflow-y: hidden;width: 100%;}
+
+.website > header {display: flex;justify-content: space-between;}
+.website > header .signing {display: flex;align-items: center;padding: 0 1em;font-size: 120%;border-bottom: solid #b90101;}
+.website > header .heading {flex-grow: 2;text-align: center;margin: 0;padding: 1em;background-color: #c86003;font-size: 200%;color: wheat;}
+
+.website > main {flex-grow: 1;display: flex;justify-content: center;align-items: center;}
+.website .demo {}
+
+.website > footer {display: flex;justify-content: space-between;height: 5em;}
+.website > footer p {width: 100%;}
+.website > footer .caption {position: relative;width: 3em;height: 100%;font-size: 200%;/*! overflow: hidden; */}
+.website > footer .caption > .element {display: flex;align-items: center;position: absolute;width: 5em;height: 5em;justify-content: center;background-color: #d26300;color: wheat;transform: translate(-2em, -2em);transition: transform .5s;}
+.website > footer .caption > .element:hover {transform: translate(0);}
+
+.github.foot {flex-grow: 1;border-top: solid #2b2b2b;padding: 1em;display: flex;align-items: center;text-align: center;background: #373434;color: #bdbdbd;}
+.github.foot .link {text-decoration: underline;text-decoration-style: double;}
+
+.panel .handler {}

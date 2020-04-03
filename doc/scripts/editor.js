@@ -1,6 +1,4 @@
-import { Noder } from "./index.js";
-
-export class NoderEditor extends Noder {
+class NoderEditor extends Noder {
 
   constructor({ target, container = null }) {
 
